@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "mineflayer": "^4.20.0",
-    "mineflayer-baritone": "^0.1.5",
+    "mineflayer-baritone": "github:Exor74/mineflayer-baritone",
     "vec3": "^0.1.8"
   },
   "author": "",
