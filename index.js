@@ -4,8 +4,8 @@ const GoalXYZ = goals.GoalXYZ;
 
 // ================= AYARLAR =================
 const AYARLAR = {
-    host: '6b6t.org',             
-    port: 25565,                  
+    host: 'Syrox200.aternos.me:37234',             
+    port: 37234,                  
     username: 'VuadasTpaBot1',   // Botun ismi
     sifre: 'Ewdry3NgAF6h9',           // Botun şifresi
     sahip: 'Vuadas'             // Oyundaki adın
