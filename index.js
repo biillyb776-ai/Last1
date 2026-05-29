@@ -1,7 +1,21 @@
 const mineflayer = require('mineflayer');
-const baritonePlugin = require('mineflayer-baritone'); 
 const vec3 = require('vec3');
 const readline = require('readline');
+
+// 🔴 MODÜL BULUNAMADI HATASI İÇİN KESİN ÇÖZÜM:
+// Eğer hata almaya devam edersen, aşağıdaki yol duruma göre otomatik eşleşecek.
+let baritonePlugin;
+try {
+    baritonePlugin = require('./node_modules/mineflayer-baritone');
+} catch (e) {
+    try {
+        // Eğer zipten çıktığı gibi kaldıysa klasör adı böyle olabilir:
+        baritonePlugin = require('./node_modules/mineflayer-baritone-master');
+    } catch (err) {
+        console.log("\n[HATA] Baritone klasörü bulunamadı! Lütfen node_modules klasörünün içinde 'mineflayer-baritone' adında bir klasör olduğundan emin ol.\n");
+        process.exit(1);
+    }
+}
 
 // ================= AYARLAR =================
 const AYARLAR = {
@@ -25,11 +39,11 @@ function botOlustur() {
         host: AYARLAR.host,
         port: AYARLAR.port,
         username: AYARLAR.username,
-        version: "1.21.5", // Sürüm buraya hatasız eklendi
+        version: "1.21.5", 
         checkTimeoutInterval: 60000
     });
 
-    // Baritone eklentisini bota yüklüyoruz
+    // Baritone yükleniyor
     bot.loadPlugin(baritonePlugin);
 
     bot.once('spawn', () => {
