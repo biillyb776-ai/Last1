@@ -1,4 +1,3 @@
-cat > package.json << 'EOF'
 {
   "name": "6b6t-bot",
   "version": "1.0.0",
@@ -10,6 +9,3 @@ cat > package.json << 'EOF'
     "vec3": "^0.1.8"
   }
 }
-EOF
-
-npm install
