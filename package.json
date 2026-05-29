@@ -1,13 +1,15 @@
+cat > package.json << 'EOF'
 {
   "name": "6b6t-bot",
   "version": "1.0.0",
-  "description": "6b6t auto login, portal giriş ve Baritone kontrol botu",
   "main": "bot.js",
-  "scripts": {
-    "start": "node bot.js"
-  },
   "dependencies": {
     "mineflayer": "^4.18.0",
-    "mineflayer-baritone": "^1.0.2"
+    "minecraft-protocol": "^1.44.0",
+    "prismarine-chunk": "^1.35.0",
+    "vec3": "^0.1.8"
   }
 }
+EOF
+
+npm install
