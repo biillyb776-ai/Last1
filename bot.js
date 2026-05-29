@@ -1,4 +1,3 @@
-cat > bot.js << 'BOTEOF'
 const mineflayer = require('mineflayer');
 const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
 const pvp = require('mineflayer-pvp').plugin;
@@ -163,4 +162,3 @@ console.log('  !come');
 console.log('  !mine diamond_ore');
 console.log('  !stop');
 console.log('  !pos');
-BOTEOF
