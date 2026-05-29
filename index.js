@@ -4,7 +4,7 @@ const GoalXYZ = goals.GoalXYZ;
 
 // ================= AYARLAR =================
 const AYARLAR = {
-    host: 'Syrox200.aternos.me:37234',             
+    host: 'Syrox200.aternos.me',             
     port: 37234,                  
     username: 'VuadasTpaBot1',   // Botun ismi
     sifre: 'Ewdry3NgAF6h9',           // Botun şifresi
