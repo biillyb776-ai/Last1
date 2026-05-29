@@ -1,0 +1,16 @@
+{
+  "name": "VuadasTpaBot1",
+  "version": "1.0.0",
+  "description": "6b6t ve anarsi sunuculari icin basit baritone botu",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "mineflayer": "^4.20.0",
+    "mineflayer-baritone": "^0.1.5",
+    "vec3": "^0.1.8"
+  },
+  "author": "",
+  "license": "ISC"
+}
