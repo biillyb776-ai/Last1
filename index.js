@@ -6,9 +6,9 @@ const vec3 = require('vec3');
 const AYARLAR = {
     host: '6b6t.org',             // Sunucu IP'si
     port: 25565,                  // Sunucu Portu
-    username: 'AnarsiBotu',       // Botun Oyundaki Adı
-    sifre: 'GuvonliSifre123',     // Sunucu Giriş Şifresi
-    sahip: 'SeninOyundakiAdin'    // Botu kontrol edecek kişinin (senin) adın
+    username: 'VuadasTpaBot1',       // Botun Oyundaki Adı
+    sifre: 'Ewdry3NgAF6h9',     // Sunucu Giriş Şifresi
+    sahip: 'Vuadas'    // Botu kontrol edecek kişinin (senin) adın
 };
 // ===========================================
 
