@@ -1,14 +1,14 @@
 const mineflayer = require('mineflayer');
-const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
-const GoalXYZ = goals.GoalXYZ;
+const baritonePlugin = require('mineflayer-baritone'); 
+const vec3 = require('vec3');
 const readline = require('readline');
 
 // ================= AYARLAR =================
 const AYARLAR = {
     host: '6b6t.org',             
     port: 25565,                  
-    username: 'VuadasTpaBot1',   
-    sifre: 'Ewdry3NgAF6h9',           
+    username: 'BaritoneAnarsi',   
+    sifre: 'Sifre12345',           
     sahip: 'SeninAdin'             
 };
 // ===========================================
@@ -19,58 +19,45 @@ const rl = readline.createInterface({
 });
 
 function botOlustur() {
-    console.log('[Sistem] Bot sunucuya bağlanıyor...');
+    console.log('[Sistem] Baritone Botu 1.21.5 sürümüyle başlatılıyor...');
     
-        const bot = mineflayer.createBot({
+    const bot = mineflayer.createBot({
         host: AYARLAR.host,
         port: AYARLAR.port,
         username: AYARLAR.username,
-        version: "1.21.5", // <-- Sürümü tam olarak buraya sabitledik
+        version: "1.21.5", // Sürüm buraya hatasız eklendi
         checkTimeoutInterval: 60000
     });
 
-    });
-
-    bot.loadPlugin(pathfinder);
+    // Baritone eklentisini bota yüklüyoruz
+    bot.loadPlugin(baritonePlugin);
 
     bot.once('spawn', () => {
-        console.log('[Başarılı] Bot oyuna girdi!');
+        console.log('[Başarılı] Baritone aktif ve oyuna girildi!');
         
-        // 1. Önce şifreyi girsin
         setTimeout(() => bot.chat(`/register ${AYARLAR.sifre} ${AYARLAR.sifre}`), 1000);
         setTimeout(() => bot.chat(`/login ${AYARLAR.sifre}`), 2000);
         
-        // Pathfinder hareket ayarları
-        const mcData = require('minecraft-data')(bot.version);
-        const defaultMove = new Movements(bot, mcData);
-        bot.pathfinder.setMovements(defaultMove);
-
-        // 🔴 [YENİ] PORTALA OTOMATİK GİRİŞ SİSTEMİ
-        // Şifre girildikten 4 saniye sonra bot önündeki portala doğru dümdüz koşmaya başlar
+        // Otomatik portal girişi
         setTimeout(() => {
-            console.log('[Portal] Portala doğru ilerleniyor...');
-            
-            // Botun o anki konumunu alıp 15 blok önüne bir hedef koyuyoruz (Genelde portal tam önünde olur)
+            console.log('[Portal] Baritone ile portala doğru ilerleniyor...');
             const konum = bot.entity.position;
             const yaw = bot.entity.yaw;
             
-            // Botun baktığı yöne göre düz ileri yürümesini sağlar
-            const xHedef = konum.x - Math.sin(yaw) * 15;
-            const zHedef = konum.z - Math.cos(yaw) * 15;
+            const xHedef = Math.floor(konum.x - Math.sin(yaw) * 12);
+            const zHedef = Math.floor(konum.z - Math.cos(yaw) * 12);
 
-            bot.pathfinder.setGoal(new GoalXYZ(xHedef, konum.y, zHedef));
+            bot.baritone.goTo(new vec3(xHedef, konum.y, zHedef));
         }, 4000);
     });
 
     // Canlı Sohbet Takibi
     bot.on('message', (jsonMsg) => {
         const mesaj = jsonMsg.toString().trim();
-        if (mesaj.length > 0) {
-            console.log(`[CHATS] ${mesaj}`);
-        }
+        if (mesaj.length > 0) console.log(`[CHATS] ${mesaj}`);
     });
 
-    // Oyun içi komutlar
+    // Oyun içi Baritone Komutları
     bot.on('chat', (username, message) => {
         if (username !== AYARLAR.sahip) return; 
 
@@ -79,32 +66,25 @@ function botOlustur() {
             const x = parseInt(args[1]);
             const y = parseInt(args[2]);
             const z = parseInt(args[3]);
-            bot.chat(`[Bot] ${x} ${y} ${z} yönüne gidiyorum.`);
-            bot.pathfinder.setGoal(new GoalXYZ(x, y, z));
+            bot.chat(`[Baritone] ${x} ${y} ${z} hedefine gidiyorum.`);
+            bot.baritone.goTo(new vec3(x, y, z));
         }
 
-        if (message === 'yanıma gel') {
-            const target = bot.players[username]?.entity;
-            if (!target) {
-                bot.chat('[Bot] Uzaktasın, göremiyorum!');
-                return;
-            }
-            bot.chat('[Bot] Geliyorum.');
-            bot.pathfinder.setGoal(new GoalXYZ(target.position.x, target.position.y, target.position.z));
+        if (message.startsWith('kaz ')) {
+            const blok = message.replace('kaz ', '').trim();
+            bot.chat(`[Baritone] ${blok} aranıyor ve kazılıyor...`);
+            bot.baritone.mine(blok);
         }
 
         if (message === 'dur') {
-            bot.chat('[Bot] Durdum.');
-            bot.pathfinder.setGoal(null);
+            bot.chat('[Baritone] Durduruldu.');
+            bot.baritone.stop();
         }
     });
 
-    // Termux'tan yazma
+    // Termux Konsol Girişi
     rl.on('line', (line) => {
-        const text = line.trim();
-        if (text.length > 0) {
-            bot.chat(text); 
-        }
+        if (line.trim().length > 0) bot.chat(line.trim());
     });
 
     bot.on('death', () => {
