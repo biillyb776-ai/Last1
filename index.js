@@ -1,143 +1,109 @@
 const mineflayer = require('mineflayer');
-const vec3 = require('vec3');
-const readline = require('readline');
+const baritone = require('mineflayer-baritone');
 
-// Manuel yüklenen Baritone modül kontrolü
-let baritonePlugin;
-try {
-    baritonePlugin = require('./node_modules/mineflayer-baritone');
-} catch (e) {
-    try {
-        baritonePlugin = require('./node_modules/mineflayer-baritone-master');
-    } catch (err) {
-        console.log("[Hata] Baritone klasörü bulunamadı! Lütfen node_modules içine manuel attığından emin ol.");
-        process.exit(1);
-    }
-}
-
-// ================= AYARLAR =================
-const AYARLAR = {
-    host: '6b6t.org',             
-    port: 25565,                  
-    username: 'VuadasTpaBot1', // Botunun adı
-    sifre: 'Ewdry3NgAF6h9',           // Botunun şifresi
-    sahip: 'Vuadas'             // Oyundaki adın
+// KENDİ BİLGİLERİNİ BURAYA GİR
+const config = {
+  host: '6b6t.org',         // Sunucu IP'si (örnek, doğru IP'yi yaz)
+  port: 25565,
+  username: 'VuadasTpaBot1',     // Botun Minecraft kullanıcı adı
+  password: 'Ewdry3NgAF6h9',   // AuthMe şifresi (kayıt/giriş için aynı)
+  owner: 'Vuadas',      // Botu chatten yönetecek kişinin adı
 };
-// ===========================================
 
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
+let loggedIn = false;
+
+const bot = mineflayer.createBot({
+  host: config.host,
+  port: config.port,
+  username: config.username,
 });
 
-function botOlustur() {
-    console.log('[Sistem] İnternet hazır şablonu yüklendi. 1.21.5 sürümü başlatılıyor...');
-    
-    const bot = mineflayer.createBot({
-        host: AYARLAR.host,
-        port: AYARLAR.port,
-        username: AYARLAR.username,
-        version: "1.21.5", 
-        checkTimeoutInterval: 60000
-    });
+// Baritone eklentisini yükle
+baritone(bot);
 
-    // Baritone eklentisini bota enjekte ediyoruz
-    bot.loadPlugin(baritonePlugin);
+// Konsola bilgi yazdırma
+bot.on('login', () => {
+  console.log('✅ Sunucuya bağlanıldı, giriş ekranı bekleniyor...');
+});
 
-    // Bot doğduğunda tetiklenen ana döngü
-    bot.once('spawn', () => {
-        console.log('[Hazır Kod] Bot başarıyla doğdu. Komutlar sırayla gönderiliyor...');
-        
-        // Kimlik doğrulama komutları (Lobi korumaları için)
-        setTimeout(() => bot.chat(`/register ${AYARLAR.sifre} ${AYARLAR.sifre}`), 1500);
-        setTimeout(() => bot.chat(`/login ${AYARLAR.sifre}`), 3000);
-        
-        // Otomatik Portal Algılayıcı ve Baritone Koşucusu
-        setTimeout(() => {
-            console.log('[Baritone] Tarayıcı başlatıldı: Lobi portalı aranıyor...');
-            
-            const mcData = require('minecraft-data')(bot.version);
-            
-            // İnternetteki hazır şablon mantığı: ID karmaşasını önlemek için portalı iki isimle de arar
-            const portalKimligi = mcData.blocksByName.nether_portal ? mcData.blocksByName.nether_portal.id : mcData.blocksByName.portal.id;
-            
-            const yakindakiPortallar = bot.findBlocks({
-                matching: portalKimligi,
-                maxDistance: 64, // 64 blok genişliğinde devasa bir alanı tarar
-                count: 1
-            });
+// Chat mesajlarını dinle ve login / register işlemlerini yap
+bot.on('message', (jsonMsg) => {
+  const msg = jsonMsg.toString();
+  console.log(`[CHAT] ${msg}`);
 
-            if (yakindakiPortallar.length > 0) {
-                const anaPortal = yakindakiPortallar[0];
-                console.log(`[Baritone] Portal hedefi kilitlendi! Koordinatlar: X: ${anaPortal.x}, Y: ${anaPortal.y}, Z: ${anaPortal.z}`);
-                
-                // Baritone'a doğrudan portalın merkezine gitme emri verilir
-                bot.baritone.goTo(anaPortal);
-            } else {
-                console.log('[Baritone] Yakında nether portalı tespit edilemedi! Kör yürüyüş şablonu aktif ediliyor...');
-                
-                // Eğer portalı göremiyorsa, lobi düzlüğünde Baritone ile otomatik ileri sızma yapar
-                const anlikKonum = bot.entity.position;
-                const bakiYonu = bot.entity.yaw;
-                
-                const xIleri = Math.floor(anlikKonum.x - Math.sin(bakiYonu) * 15);
-                const zIleri = Math.floor(anlikKonum.z - Math.cos(bakiYonu) * 15);
-                
-                bot.baritone.goTo(new vec3(xIleri, anlikKonum.y, zIleri));
-            }
-        }, 5000); // Sunucu gecikmelerine karşı 5. saniyede tetiklenir
-    });
+  // AuthMe kayıt / giriş komutlarını yakala
+  if (!loggedIn) {
+    if (msg.includes('/register')) {
+      console.log('📝 Kayıt komutu alındı, kayıt yapılıyor...');
+      bot.chat(`/register ${config.password} ${config.password}`);
+    } else if (msg.includes('/login')) {
+      console.log('🔐 Giriş komutu alındı, giriş yapılıyor...');
+      bot.chat(`/login ${config.password}`);
+    } else if (
+      msg.includes('successfully') ||  // "registered successfully" / "logged in successfully"
+      msg.includes('başarıyla') ||     // Türkçe sunucular için
+      msg.includes('giriş yaptı')
+    ) {
+      console.log('✅ Giriş başarılı!');
+      loggedIn = true;
+      // Portala yürüme işlemini başlat
+      setTimeout(enterPortal, 2000);
+    }
+  }
+});
 
-    // Canlı Sunucu Sohbet Akışı
-    bot.on('message', (jsonMsg) => {
-        const mesaj = jsonMsg.toString().trim();
-        if (mesaj.length > 0) console.log(`[CHATS] ${mesaj}`);
-    });
+// Eğer mesaj yakalanmazsa yedek olarak 10 saniye sonra portala yürümeyi dene
+setTimeout(() => {
+  if (!loggedIn) {
+    console.warn('⚠️  Giriş mesajı algılanamadı, yine de portala yürümeyi dene.');
+    loggedIn = true;
+    setTimeout(enterPortal, 2000);
+  }
+}, 15000);
 
-    // Oyundan Kontrol Komutları (Sadece sahip için)
-    bot.on('chat', (username, message) => {
-        if (username !== AYARLAR.sahip) return; 
-
-        if (message.startsWith('git ')) {
-            const args = message.split(' ');
-            const x = parseInt(args[1]);
-            const y = parseInt(args[2]);
-            const z = parseInt(args[3]);
-            bot.chat(`[Baritone] Hedefe yönlendiriliyor: ${x} ${y} ${z}`);
-            bot.baritone.goTo(new vec3(x, y, z));
-        }
-
-        if (message.startsWith('kaz ')) {
-            const blokAdi = message.replace('kaz ', '').trim();
-            bot.chat(`[Baritone] ${blokAdi} aranıyor...`);
-            bot.baritone.mine(blokAdi);
-        }
-
-        if (message === 'dur') {
-            bot.chat('[Baritone] İşlemler iptal edildi.');
-            bot.baritone.stop();
-        }
-    });
-
-    // Termux Ekranından Canlı Konsol Girişi
-    rl.on('line', (line) => {
-        if (line.trim().length > 0) bot.chat(line.trim());
-    });
-
-    // Ölüm durumunda bekletmeden canlanma (Anti-Lobi Ölümü)
-    bot.on('death', () => {
-        console.log('[Sistem] Bot öldü, otomatik yeniden doğuluyor...');
-        bot.respawn();
-    });
-
-    // Bağlantı Kesilmesi Durumunda Sonsuz Döngü
-    bot.on('end', (reason) => {
-        console.log(`[Bağlantı Kesildi] Durum: ${reason}. 5 saniye sonra sistem kendini yeniden başlatacak...`);
-        setTimeout(botOlustur, 5000);
-    });
-
-    bot.on('error', (err) => console.log('[Sistem Hatası]', err));
+function enterPortal() {
+  console.log('🚪 Portala doğru yürünüyor (5 saniye ileri)...');
+  bot.setControlState('forward', true);
+  // Portalın içine tam girebilmek için zıplamayı da aktif et
+  bot.setControlState('jump', true);
+  setTimeout(() => {
+    bot.setControlState('forward', false);
+    bot.setControlState('jump', false);
+    console.log('🏁 Portal geçişi tamamlandı (umuyoruz).');
+  }, 5000);
 }
 
-// Hazır sistemi ateşle
-botOlustur();
+// ------- CHAT İLE BOT KONTROLÜ (SAHİP TARAFINDAN) -------
+bot.on('chat', (username, message) => {
+  // Sadece config.owner yazabilir
+  if (username !== config.owner) return;
+
+  // Prefix: "!" ile başlayan mesajlar Baritone komutu olarak işlenir
+  if (message.startsWith('!')) {
+    const command = message.slice(1).trim();
+    console.log(`📢 Sahip komutu: ${command}`);
+    // Eğer özel bir komut değilse direkt Baritone'a ilet
+    if (command === 'stop') {
+      // Baritone'u durdur ve tüm hareketleri iptal et
+      bot.baritone.chat('stop');
+      bot.clearControlStates();
+      console.log('🛑 Baritone durduruldu ve hareketler temizlendi.');
+    } else {
+      // Diğer tüm komutları doğrudan Baritone sohbetine gönder
+      // Örnek: "!goto 100 200", "!mine diamond_ore", "!follow oyuncu"
+      bot.baritone.chat(command);
+    }
+  }
+});
+
+// Hata durumunda yeniden bağlanmayı dene
+bot.on('end', (reason) => {
+  console.log(`🔌 Bağlantı koptu: ${reason}. 5 saniye sonra tekrar bağlanılıyor...`);
+  setTimeout(() => {
+    process.exit(1); // veya bir process manager (pm2) ile yeniden başlatabilirsin
+  }, 5000);
+});
+
+bot.on('error', (err) => {
+  console.error(`❌ Hata: ${err.message}`);
+});
