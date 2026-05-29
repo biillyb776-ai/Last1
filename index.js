@@ -1,80 +1,91 @@
 const mineflayer = require('mineflayer');
-const baritonePlugin = require('mineflayer-baritone');
-const vec3 = require('vec3');
+const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
+const GoalXYZ = goals.GoalXYZ;
 
 // ================= AYARLAR =================
 const AYARLAR = {
-    host: '6b6t.org',             // Sunucu IP'si
-    port: 25565,                  // Sunucu Portu
-    username: 'VuadasTpaBot1',       // Botun Oyundaki Adı
-    sifre: 'Ewdry3NgAF6h9',     // Sunucu Giriş Şifresi
-    sahip: 'Vuadas'    // Botu kontrol edecek kişinin (senin) adın
+    host: '6b6t.org',             
+    port: 25565,                  
+    username: 'VuadasTpaBot1',   // Botun ismi
+    sifre: 'Ewdry3NgAF6h9',           // Botun şifresi
+    sahip: 'Vuadas'             // Oyundaki adın
 };
 // ===========================================
 
-function botuBaslat() {
-    console.log(`[Sistem] ${AYARLAR.username} botu başlatılıyor...`);
-
+function botOlustur() {
+    console.log('[Sistem] Bot sunucuya bağlanıyor...');
+    
     const bot = mineflayer.createBot({
         host: AYARLAR.host,
         port: AYARLAR.port,
-        username: AYARLAR.username
+        username: AYARLAR.username,
+        checkTimeoutInterval: 60000 // Zaman aşımı hatasını önler
     });
 
-    // Baritone eklentisini yüklüyoruz
-    bot.loadPlugin(baritonePlugin);
+    // Gelişmiş hareket motorunu yüklüyoruz (Baritone çakması)
+    bot.loadPlugin(pathfinder);
 
-    // Bot sunucuya ilk bağlandığında (Giriş/Kayıt)
+    // Sunucuya girince otomatik login yapma ve hareket yeteneği açma
     bot.once('spawn', () => {
-        console.log('[Sistem] Sunucuya bağlanıldı. Giriş yapılıyor...');
-        bot.chat(`/register ${AYARLAR.sifre} ${AYARLAR.sifre}`);
-        bot.chat(`/login ${AYARLAR.sifre}`);
+        console.log('[Başarılı] Bot oyuna girdi!');
+        
+        // 6b6t kuyruk ve giriş sistemi için komutlar
+        setTimeout(() => bot.chat(`/register ${AYARLAR.sifre} ${AYARLAR.sifre}`), 1000);
+        setTimeout(() => bot.chat(`/login ${AYARLAR.sifre}`), 2000);
+        
+        // Botun blokların üzerinden atlayabilmesi için ayar
+        const mcData = require('minecraft-data')(bot.version);
+        const defaultMove = new Movements(bot, mcData);
+        bot.pathfinder.setMovements(defaultMove);
     });
 
-    // Sohbet komutlarını dinleme
+    // Sohbet Komutları
     bot.on('chat', (username, message) => {
-        if (username !== AYARLAR.sahip) return; // Sadece sahibini dinler
+        if (username !== AYARLAR.sahip) return; // Sadece seni dinler
 
-        console.log(`[Komut] ${username}: ${message}`);
-
-        // Koordinata gitme komutu (Örn: git 100 70 -200)
+        // Örnek: git 100 64 -200 (Yoldaki engelleri aşarak gider)
         if (message.startsWith('git ')) {
-            const kordinat = message.replace('git ', '').split(' ');
-            if (kordinat.length === 3) {
-                const x = parseInt(kordinat[0]);
-                const y = parseInt(kordinat[1]);
-                const z = parseInt(kordinat[2]);
-                
-                bot.chat(`[Bot] ${x}, ${y}, ${z} yönüne ilerliyorum.`);
-                bot.baritone.goTo(new vec3(x, y, z));
-            } else {
-                bot.chat('[Bot] Hata! Kullanım: git X Y Z');
+            const args = message.split(' ');
+            const x = parseInt(args[1]);
+            const y = parseInt(args[2]);
+            const z = parseInt(args[3]);
+
+            bot.chat(`[Bot] ${x} ${y} ${z} koordinatına koşuyorum...`);
+            bot.pathfinder.setGoal(new GoalXYZ(x, y, z));
+        }
+
+        // Örnek: yanıma gel (Seni bulur ve yanına koşar)
+        if (message === 'yanıma gel') {
+            const target = bot.players[username]?.entity;
+            if (!target) {
+                bot.chat('[Bot] Seni göremiyorum, çok uzaktasın!');
+                return;
             }
+            bot.chat('[Bot] Yanına geliyorum.');
+            bot.pathfinder.setGoal(new GoalXYZ(target.position.x, target.position.y, target.position.z));
         }
 
-        // Blok kazma komutu (Örn: kaz diamond_ore)
-        if (message.startsWith('kaz ')) {
-            const blokAdi = message.replace('kaz ', '').trim();
-            bot.chat(`[Bot] ${blokAdi} aranıyor ve kazılıyor...`);
-            bot.baritone.mine(blokAdi);
-        }
-
-        // Durdurma komutu (Örn: dur)
+        // Örnek: dur
         if (message === 'dur') {
-            bot.chat('[Bot] İşlem durduruldu.');
-            bot.baritone.stop();
+            bot.chat('[Bot] Durdum.');
+            bot.pathfinder.setGoal(null);
         }
     });
 
-    // Otomatik Yeniden Bağlanma (Anti-Disconnect)
-    bot.on('end', (reason) => {
-        console.log(`[Bağlantı Kesildi] Sebep: ${reason}`);
-        console.log('[Sistem] 10 saniye sonra otomatik olarak yeniden bağlanılacak...');
-        setTimeout(botuBaslat, 10000);
+    // Öldüğünde otomatik doğma
+    bot.on('death', () => {
+        console.log('[Uyarı] Bot öldü! Yeniden doğuluyor...');
+        bot.respawn();
     });
 
-    bot.on('error', (err) => console.error('[Hata]', err));
+    // Sunucudan atılırsa 5 saniye sonra otomatik geri girme
+    bot.on('end', (reason) => {
+        console.log(`[Bağlantı Koptu] Sebep: ${reason}. 5 saniye sonra tekrar denenecek...`);
+        setTimeout(botOlustur, 5000);
+    });
+
+    bot.on('error', (err) => console.log('[Hata]', err));
 }
 
-// Botu tetikle
-botuBaslat();
+// Sistemi Başlat
+botOlustur();
