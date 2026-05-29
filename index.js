@@ -21,11 +21,14 @@ const rl = readline.createInterface({
 function botOlustur() {
     console.log('[Sistem] Bot sunucuya bağlanıyor...');
     
-    const bot = mineflayer.createBot({
+        const bot = mineflayer.createBot({
         host: AYARLAR.host,
         port: AYARLAR.port,
         username: AYARLAR.username,
+        version: "1.21.5", // <-- Sürümü tam olarak buraya sabitledik
         checkTimeoutInterval: 60000
+    });
+
     });
 
     bot.loadPlugin(pathfinder);
